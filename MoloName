@@ -1,0 +1,50 @@
+local molyArray = {}
+local pName = " "
+
+local guiref = gui.Reference("Visuals","Other","Extra")
+local mollycheck = gui.Checkbox(guiref, "mollynamescheck", "Molotov Names", 0)
+
+local function molotovEvent(event)
+	if event:GetName() == "inferno_startburn" or event:GetName() == "inferno_expire" or event:GetName() == "molotov_detonate" then
+		local molyThrower = event:GetInt("userid")
+		local playerName = client.GetPlayerNameByUserID(molyThrower)
+		local playerIndex = client.GetPlayerIndexByUserID(molyThrower)
+		local infernoBurn = event:GetInt("entityid")
+		if event:GetName() == "molotov_detonate" then
+			pName = playerName
+		elseif event:GetName() == "inferno_startburn" then
+			if molyArray[infernoBurn] == nil then
+				molyArray[infernoBurn] = {event:GetFloat("x"), event:GetFloat("y"), event:GetFloat("z"), 0, pName}
+			end
+			molyArray[infernoBurn][4] = infernoBurn
+		elseif event:GetName() == "inferno_expire" then
+			if molyArray[infernoBurn][4] == infernoBurn then
+				molyArray[infernoBurn] = nil
+			end
+		end
+	end
+
+	if event:GetName() == "round_start" then
+		molyArray = {}
+	end
+end
+
+local function molotovDraw()
+	if mollycheck:GetValue() == true then
+		for i, v in pairs(molyArray) do
+
+			local x1, x2 = client.WorldToScreen(Vector3(v[1], v[2], v[3]))
+
+			if x1 == nil or x2 == nil then return end
+
+			draw.Color(255, 0, 0, 255)	
+			draw.TextShadow(x1 - select(1, draw.GetTextSize(v[5].."'s Molotov"))/2, x2 - 20, v[5].."'s Molotov")
+		end
+	end
+end
+callbacks.Register("FireGameEvent", "molotovEvent", molotovEvent)
+callbacks.Register("Draw", "molotovDraw", molotovDraw)
+client.AllowListener("molotov_detonate")
+client.AllowListener("inferno_startburn")
+client.AllowListener("inferno_expire")
+client.AllowListener("round_start")
